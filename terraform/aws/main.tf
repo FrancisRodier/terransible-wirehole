@@ -3,7 +3,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   filter {
@@ -23,7 +23,15 @@ resource "aws_instance" "wirehole" {
   tags = {
     Name = "wirehole"
   }
+
+# Run as a script before starting the instance.
+# Adds the TS_AUTH_KEY to the env variable as it will be used by Ansible
+  user_data = <<EOF
+#!/bin/bash
+echo "TS_AUTH_KEY=${var.tailscale_auth_key}" >> /etc/environment
+EOF
 }
+
 
 resource "aws_security_group" "wireholesg" {
   name   = "wireholesg"

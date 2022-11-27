@@ -20,27 +20,25 @@ services:
       private_network:
         ipv4_address: 10.2.0.200
 
-  wireguard:
+  tailscaled:
     depends_on: [unbound, pihole]
-    image: linuxserver/wireguard
-    container_name: wireguard
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
+    image: tailscale/tailscale
+    container_name: tailscaled
+    # TS_ACCEPT_DNS: TRUE
+    # cap_add:
+    #   - NET_ADMIN
+    #   - SYS_MODULE
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York  # Change to your timezone
-      - SERVERPORT=51820
-      # - SERVERURL=my.ddns.net #optional - For use with DDNS (Uncomment to use)
-      - PEERS=10  # How many peers to generate for you (clients)
-      - PEERDNS=10.2.0.100  # Set it to point to pihole
-      - INTERNAL_SUBNET=10.6.0.0
-
+      - TS_AUTH_KEY="${TS_AUTH_KEY}"
+      - TS_STATE_DIR='/var/lib/tailscale'
     volumes:
-      - ./wireguard/config:/config
-      - ./wireguard/etc/wireguard:/etc/wireguard/
-      - /lib/modules:/lib/modules
+        - "/opt/appdata/tailscale/var_lib:/var/lib"        # State data will be stored in this directory
+        - "/dev/net/tun:/dev/net/tun"                      # Required for tailscale to work
+    cap_add:                                               # Required for tailscale to work
+      - net_admin
+      - sys_module
+    command: tailscaled
+    restart: unless-stopped
     ports:
       - "51820:51820/udp"
     dns:
@@ -48,12 +46,9 @@ services:
       - 10.2.0.200  # Points to unbound
     sysctls:
       - net.ipv4.conf.all.src_valid_mark=1
-
-    restart: unless-stopped
     networks:
       private_network:
         ipv4_address: 10.2.0.3
-
   pihole:
     depends_on: [unbound]
     container_name: pihole
@@ -64,7 +59,7 @@ services:
       - 127.0.0.1
       - 10.2.0.200  # Points to unbound
     environment:
-      TZ: "America/New_York"
+      TZ: "Australia/Melbourne"
       WEBPASSWORD: ""  # Blank password - Can be whatever you want.
       ServerIP: 10.1.0.100  # Internal IP of pihole
       DNS1: 10.2.0.200  # Unbound IP
@@ -76,7 +71,7 @@ services:
     # Recommended but not required (DHCP needs NET_ADMIN)
     #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
     cap_add:
-      - NET_ADMIN
+      - NET_ADMIN #
     networks:
       private_network:
         ipv4_address: 10.2.0.100

@@ -19,3 +19,7 @@ variable "instance_type" {
 variable "key_name" {}
 
 variable "ssh_private_key_path" {}
+variable "tailscale_auth_key" {
+  type = string
+  description = "AUTH key used to connect to your tailnet "
+}
